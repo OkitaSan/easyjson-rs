@@ -82,3 +82,111 @@ fn number_ok_test(){
     assert_eq!(lexer.get_json_tokens("-12E-2"),Ok(vec![JSONTokens::Number(-12E-2)]));
     assert_eq!(lexer.get_json_tokens("-12,23"),Ok(vec![JSONTokens::Number(-12f64),JSONTokens::Comma,JSONTokens::Number(23f64)]));
 }
+
+#[test]
+fn number_invalid_zero(){
+    let mut lexer = Lexer::new();
+    assert_eq!(lexer.get_json_tokens("-012"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("012"),Err(LexerError::InvalidNumberFormatError));
+}
+
+#[test]
+fn negative_sign_without_number(){
+    let mut lexer = Lexer::new();
+    assert_eq!(lexer.get_json_tokens("-"),Err(LexerError::InvalidNumberFormatError));
+}
+
+#[test]
+fn number_has_point_but_no_digits_after_point(){
+    let mut lexer = Lexer::new();
+    assert_eq!(lexer.get_json_tokens("-32."),Err(LexerError::ExpectedDigitAfterPointError));
+    assert_eq!(lexer.get_json_tokens("32."),Err(LexerError::ExpectedDigitAfterPointError));
+    assert_eq!(lexer.get_json_tokens("-0."),Err(LexerError::ExpectedDigitAfterPointError));
+    assert_eq!(lexer.get_json_tokens("0."),Err(LexerError::ExpectedDigitAfterPointError));
+}
+
+#[test]
+fn exponent_without_digit(){
+    let mut lexer = Lexer::new();
+    assert_eq!(lexer.get_json_tokens("12e"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12e"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1e"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1e"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0e"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0e"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12E"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12E"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1E"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1E"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0E"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0E"),Err(LexerError::InvalidNumberFormatError));
+
+    assert_eq!(lexer.get_json_tokens("12e+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12e+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1e+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1e+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0e+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0e+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12E+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12E+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1E+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1E+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0E+"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0E+"),Err(LexerError::InvalidNumberFormatError));
+
+    assert_eq!(lexer.get_json_tokens("12e-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12e-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1e-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1e-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0e-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0e-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12E-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12E-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1E-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1E-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0E-"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0E-"),Err(LexerError::InvalidNumberFormatError));
+}
+
+#[test]
+fn exponent_has_digit_after_zero(){
+    let mut lexer = Lexer::new();
+    assert_eq!(lexer.get_json_tokens("12e01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12e01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1e01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1e01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0e01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0e01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12E01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12E01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1E01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1E01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0E01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0E01"),Err(LexerError::InvalidNumberFormatError));
+
+    assert_eq!(lexer.get_json_tokens("12e+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12e+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1e+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1e+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0e+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0e+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12E+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12E+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1E+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1E+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0E+01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0E+01"),Err(LexerError::InvalidNumberFormatError));
+
+    assert_eq!(lexer.get_json_tokens("12e-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12e-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1e-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1e-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0e-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0e-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12E-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12E-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("12.1E-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-12.1E-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("0E-01"),Err(LexerError::InvalidNumberFormatError));
+    assert_eq!(lexer.get_json_tokens("-0E-01"),Err(LexerError::InvalidNumberFormatError));
+}

@@ -185,6 +185,10 @@ impl Lexer {
                             number.push(digit);
                         }
 
+                        if cnt == 0 {
+                            return Err(LexerError::ExpectedDigitAfterPointError);
+                        }
+
                         current_number_character = match current_character
                             .next_if(|x| x == &'e' || x == &'E') {
                             Some(val) => val,
@@ -195,9 +199,7 @@ impl Lexer {
                             }
                         }
                         ;
-                        if cnt == 0 {
-                            return Err(LexerError::ExpectedDigitAfterPointError);
-                        }
+
                     }
                     if current_number_character == 'e' || current_number_character == 'E' {
                         number.push(current_number_character);
