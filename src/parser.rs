@@ -1,4 +1,5 @@
 use core::num;
+use std::{iter::FromIterator, str::FromStr};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum JSONTokens {
@@ -25,9 +26,11 @@ pub enum JSONTokens {
     // false
     False,
 }
+
 pub struct Lexer {
     cursor: usize,
 }
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum LexerError {
     UnexpectedEOFError,
@@ -37,6 +40,7 @@ pub enum LexerError {
     ExpectedDigitAfterPointError,
     InvalidNumberFormatError,
 }
+
 impl std::fmt::Display for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -45,24 +49,30 @@ impl std::fmt::Display for LexerError {
             &LexerError::BraceNotMatchError => write!(f, "BraceNotMatchError"),
             &LexerError::BracketNotMatchError => write!(f, "BracketNotMatchError"),
             &LexerError::ExpectedDigitAfterPointError => write!(f, "ExpectedDigitAfterPointError"),
-            &LexerError::InvalidNumberFormatError => write!(f,"InvalidNumberFormatError"),
+            &LexerError::InvalidNumberFormatError => write!(f, "InvalidNumberFormatError"),
         }
     }
 }
+
 impl std::error::Error for LexerError {}
+
 impl Lexer {
     pub fn new() -> Lexer {
         Lexer { cursor: 0 }
     }
     pub fn get_json_tokens(&mut self, input: &str) -> Result<Vec<JSONTokens>, LexerError> {
         let mut tokens = Vec::new();
-        let mut current_character = input.chars();
+        let mut current_character = input.chars().peekable();
         let mut brace_matcher = 0;
         let mut bracket_matcher = 0;
         while let Some(character) = current_character.next() {
+            // FIXME: needs to introduction a state machine to control the update of the character
             match character {
                 ' ' | '\t' | '\n' | '\r' => {
                     continue;
+                }
+                ',' => {
+                    tokens.push(JSONTokens::Comma);
                 }
                 // null
                 'n' => {
@@ -114,6 +124,8 @@ impl Lexer {
                         .ok_or(LexerError::UnexpectedEOFError)?;
                     if a == 'a' && l == 'l' && s == 's' && e == 'e' {
                         tokens.push(JSONTokens::False);
+                    } else {
+                        return Err(LexerError::UnexpectedTokenError);
                     }
                 }
                 // open brace
@@ -145,14 +157,8 @@ impl Lexer {
                 // number
                 '-' | '0'..='9' => {
                     let mut number = vec![character];
-                    let mut prev_char = 'j';
-                    while let Some(digit) = current_character.next() {
-                        prev_char = digit;
-                        if !digit.is_alphanumeric() {
-                            break;
-                        } else {
-                            number.push(digit);
-                        }
+                    while let Some(digit) = current_character.next_if(|x| x.is_numeric()) {
+                        number.push(digit);
                     }
                     if (number[0] == '-' && number.len() == 1)
                         || (number[0] == '0' && number.len() != 1)
@@ -160,32 +166,79 @@ impl Lexer {
                     {
                         return Err(LexerError::InvalidNumberFormatError);
                     }
+                    let mut current_number_character = match current_character
+                        .next_if(|x| x == &'.' || x == &'e' || x == &'E') {
+                        Some(val) => val,
+                        None => {
+                            let number = f64::from_str(&String::from_iter(number.iter())).unwrap();
+                            tokens.push(JSONTokens::Number(number));
+                            continue;
+                        }
+                    }
+                        ;
 
-                    if prev_char == '.' {
-                        number.push(prev_char);
+                    if current_number_character == '.' {
+                        number.push(current_number_character);
                         let mut cnt = 0;
-                        while let Some(digit) = current_character.next() {
-                            prev_char = digit;
+                        while let Some(digit) = current_character.next_if(|x| x.is_numeric()) {
                             cnt += 1;
-                            if !digit.is_alphanumeric() {
-                                break;
-                            } else {
-                                number.push(digit);
+                            number.push(digit);
+                        }
+
+                        current_number_character = match current_character
+                            .next_if(|x| x == &'e' || x == &'E') {
+                            Some(val) => val,
+                            None => {
+                                let number = f64::from_str(&String::from_iter(number.iter())).unwrap();
+                                tokens.push(JSONTokens::Number(number));
+                                continue;
                             }
                         }
+                        ;
                         if cnt == 0 {
                             return Err(LexerError::ExpectedDigitAfterPointError);
                         }
                     }
-                    if prev_char == 'e' || prev_char == 'E' {
-                        number.push(prev_char);
-                        // TODO: 监视剩下的数字，可以利用bool flag和prev char来侦测0
-                        while let Some(val) = current_character.next(){
-                            if val == '+' || val == '-'{
+                    if current_number_character == 'e' || current_number_character == 'E' {
+                        number.push(current_number_character);
+                        let mut has_leading_zero = false;
+                        let mut prev_char = current_number_character;
+                        let mut exponent_cnt = 0;
+                        while let Some(val) = current_character.next_if(|x| x.is_numeric() || x == &'+' || x == &'-' || x == &'e' || x == &'E') {
+                            if val == '+' || val == '-' {
                                 number.push(val);
+                                prev_char = val;
+                                continue;
+                            }
+                            // detect if it is leading zero
+                            if val == '0' && (prev_char == '+' || prev_char == '-' || prev_char == 'e' || prev_char == 'E') {
+                                has_leading_zero = true;
+                                number.push(val);
+                                exponent_cnt += 1;
+                                prev_char = val;
+                                continue;
+                            }
+                            if val.is_numeric() {
+                                number.push(val);
+                                prev_char = val;
+                                exponent_cnt += 1;
+                            } else {
+                                break;
                             }
                         }
+                        /*
+                                            has_leading_zero   exponent_cnt     status
+                                            0                  != 0             Ok
+                                            0                  == 0             Err
+                                            1                  != 1             Err
+                                            1                  == 1             Ok
+                         */
+                        if (!has_leading_zero && exponent_cnt == 0) || (has_leading_zero && exponent_cnt == 1) {
+                            return Err(LexerError::InvalidNumberFormatError);
+                        }
                     }
+                    let number = f64::from_str(&String::from_iter(number.iter())).unwrap();
+                    tokens.push(JSONTokens::Number(number));
                 }
                 _ => return Err(LexerError::UnexpectedTokenError),
             }
