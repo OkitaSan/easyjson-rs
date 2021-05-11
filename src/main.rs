@@ -10,4 +10,5 @@ fn main() {
     for (&k,v) in i.iter(){
         println!("{} {}",k,v);
     }
+    ;
 }

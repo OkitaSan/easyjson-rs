@@ -1,5 +1,5 @@
-#[macro_use]
-extern crate lazy_static;
+
+pub mod lexer;
 pub mod parser;
 pub mod useful_kt_extensions {
     /// You can see how to use `let` and `also` function in kotlin

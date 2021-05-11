@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use easyjson_rs::parser::*;
+use easyjson_rs::lexer::*;
 use easyjson_rs::useful_kt_extensions::*;
 #[test]
 fn null_test(){
@@ -193,6 +193,12 @@ fn exponent_has_digit_after_zero(){
     assert_eq!(lexer.get_json_tokens("-0E-01"),Err(LexerError::InvalidNumberFormatError));
 }
 #[test]
+fn test_whether_implementation_will_consume_token_after_tokenization(){
+    let mut k = Lexer::new();
+    assert_eq!(k.get_json_tokens("123null"),Ok(vec![JSONTokens::Number(123.0),JSONTokens::Null]));
+    assert_eq!(k.get_json_tokens("123o"),Err(LexerError::UnexpectedTokenError));
+}
+#[test]
 fn kotlin_scope_function_let_test(){ 
    let k = 1i32.kotlin_let_mut_ref(|x| x.add(2));
    assert_eq!(k,3);
@@ -205,4 +211,65 @@ fn kotlin_scope_function_also_test(){
     assert_eq!(k,4);
     let j = "fda".to_string().kotlin_also_mut_ref(|x| x.push('c')).len();
     assert_eq!(j,4);
+}
+
+#[test]
+fn test_correct_string(){
+    let mut lexer = Lexer::new();
+    assert_eq!(lexer.get_json_tokens(r#""""#),Ok(vec![JSONTokens::String(r#""""#.to_string())]));
+    assert_eq!(lexer.get_json_tokens(r#"
+        "I love you"
+    "#),Ok(vec![JSONTokens::String(r#"
+        "I love you"
+    "#.trim().to_string())]));
+    assert_eq!(lexer.get_json_tokens(r#"
+        "\u0000"
+    "#),Ok(vec![JSONTokens::String(r#"
+        "\u0000"
+    "#.trim().to_string())]));
+    assert_eq!(lexer.get_json_tokens(r#"
+        "\uabcd"
+    "#),Ok(vec![JSONTokens::String(r#"
+        "\uabcd"
+    "#.trim().to_string())]));
+    assert_eq!(lexer.get_json_tokens(r#"
+        "\uABCD"
+    "#),Ok(vec![JSONTokens::String(r#"
+        "\uABCD"
+    "#.trim().to_string())]));
+    assert_eq!(lexer.get_json_tokens(r#"
+        "\"\\\/\b\f\n\r\t\uabcd"
+    "#),Ok(vec![JSONTokens::String(r#"
+        "\"\\\/\b\f\n\r\t\uabcd"
+    "#.trim().to_string())]));
+}
+
+#[test]
+fn test_escape_lossing(){
+    let mut lexer = Lexer::new();
+    assert_eq!(lexer.get_json_tokens(r#"
+        "\"\\\/\b\f\n\r\t\uabcd
+    "#),Err(LexerError::StringQuotationNotMatchError));
+}
+
+#[test]
+fn test_invalid_control_character(){
+    let mut lexer = Lexer::new();
+    assert_eq!(lexer.get_json_tokens(r#"
+        "\1"
+    "#),Err(LexerError::InvalidControlCharacterError));
+    assert_eq!(lexer.get_json_tokens(r#"
+        "\2"
+    "#),Err(LexerError::InvalidControlCharacterError));
+    assert_eq!(lexer.get_json_tokens(r#"
+        "\3"
+    "#),Err(LexerError::InvalidControlCharacterError));
+}
+
+#[test]
+fn test_invalid_unicode_digit(){
+    let mut lexer = Lexer::new();
+    assert_eq!(lexer.get_json_tokens(r#"
+        "\ghri"
+    "#),Err(LexerError::InvalidControlCharacterError));
 }
