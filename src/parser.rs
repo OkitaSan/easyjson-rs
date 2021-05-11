@@ -1,6 +1,6 @@
 use core::num;
 use std::{iter::FromIterator, str::FromStr};
-
+use crate::useful_kt_extensions::*;
 #[derive(Debug, Clone, PartialEq)]
 pub enum JSONTokens {
     // '{'
@@ -66,7 +66,6 @@ impl Lexer {
         let mut brace_matcher = 0;
         let mut bracket_matcher = 0;
         while let Some(character) = current_character.next() {
-            // FIXME: needs to introduction a state machine to control the update of the character
             match character {
                 ' ' | '\t' | '\n' | '\r' => {
                     continue;
@@ -235,7 +234,7 @@ impl Lexer {
                                             1                  != 1             Err
                                             1                  == 1             Ok
                          */
-                        if (!has_leading_zero && exponent_cnt == 0) || (has_leading_zero && exponent_cnt == 1) {
+                        if (!has_leading_zero && exponent_cnt == 0) || (has_leading_zero && exponent_cnt >= 1) {
                             return Err(LexerError::InvalidNumberFormatError);
                         }
                     }

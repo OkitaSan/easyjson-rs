@@ -1,5 +1,7 @@
-use easyjson_rs::parser::*;
+use std::ops::Add;
 
+use easyjson_rs::parser::*;
+use easyjson_rs::useful_kt_extensions::*;
 #[test]
 fn null_test(){
     let mut lexer = Lexer::new();
@@ -189,4 +191,18 @@ fn exponent_has_digit_after_zero(){
     assert_eq!(lexer.get_json_tokens("-12.1E-01"),Err(LexerError::InvalidNumberFormatError));
     assert_eq!(lexer.get_json_tokens("0E-01"),Err(LexerError::InvalidNumberFormatError));
     assert_eq!(lexer.get_json_tokens("-0E-01"),Err(LexerError::InvalidNumberFormatError));
+}
+#[test]
+fn kotlin_scope_function_let_test(){ 
+   let k = 1i32.kotlin_let_mut_ref(|x| x.add(2));
+   assert_eq!(k,3);
+   let i = "fdsafdsa".kotlin_let_ref(|x|x.len());
+   assert_eq!(i,8);
+}
+#[test]
+fn kotlin_scope_function_also_test(){
+    let k = 1i32.kotlin_also_ref(|x|println!("{}", x)).add(3);
+    assert_eq!(k,4);
+    let j = "fda".to_string().kotlin_also_mut_ref(|x| x.push('c')).len();
+    assert_eq!(j,4);
 }
