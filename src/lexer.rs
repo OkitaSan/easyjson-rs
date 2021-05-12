@@ -3,17 +3,17 @@ use std::{iter::FromIterator, ops::DerefMut, str::{self, FromStr}, string};
 use crate::useful_kt_extensions::*;
 #[derive(Debug, Clone, PartialEq)]
 pub enum JSONTokens {
-    // '{'
+    /// '{'
     OpenBrace,
-    // '}'
+    /// '}'
     CloseBrace,
-    // '['
+    /// '['
     OpenBracket,
-    // ']'
+    /// ']'
     CloseBracket,
-    // ','
+    /// ','
     Comma,
-    // ':'
+    /// ':'
     Colon,
     // Number
     Number(f64),
@@ -25,6 +25,13 @@ pub enum JSONTokens {
     True,
     // false
     False,
+}
+impl JSONTokens{
+    fn is_expected_variant(self,rhs:&Self) -> Option<Self>{
+        if self.eq(rhs) {
+            Some(self)
+        }else {None}
+    }
 }
 
 pub struct Lexer {
@@ -75,6 +82,9 @@ impl Lexer {
                 }
                 ',' => {
                     tokens.push(JSONTokens::Comma);
+                }
+                ':' => {
+                    tokens.push(JSONTokens::Colon);
                 }
                 // null
                 'n' => {
